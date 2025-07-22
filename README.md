@@ -2,14 +2,9 @@
 
 # WATcloud CLI
 
-A CLI for inspecting user resource usage and daemon status on WATcloud systems.
 
 ## Features
 
-- View disk, memory, and CPU quota usage in a human-readable format
-- List user daemons such as Docker rootless
-- Works locally or when connected to a WATcloud server (e.g., via SSH)
-- Minimal dependencies
 
 ## Setup & Installation
 
