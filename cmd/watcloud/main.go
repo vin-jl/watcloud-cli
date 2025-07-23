@@ -1,6 +1,6 @@
 package main
 
-import "github.com/LA-10/watcloud-cli/internal/cmd"
+import "github.com/WATonomous/watcloud-cli/internal/cmd"
 
 func main() {
 	cmd.Execute()

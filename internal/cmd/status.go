@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/LA-10/watcloud-cli/internal/status"
+	"github.com/WATonomous/watcloud-cli/internal/status"
 	"github.com/spf13/cobra"
 )
 
