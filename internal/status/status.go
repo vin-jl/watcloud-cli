@@ -66,19 +66,6 @@ func printNodeStatus() {
 		return
 	}
 
-	// nameCol := color.New(color.Bold)
-	statusUp := color.New(color.FgGreen)
-	statusDown := color.New(color.FgRed)
-	statusUnknown := color.New(color.FgYellow)
-
-	// Print headers
-	fmt.Printf("%-35s %-10s %-15s %s\n", "Node", "Status", "Last Ping", "Description")
-	fmt.Printf("%-35s %-10s %-15s %s\n",
-		strings.Repeat("─", 35),
-		strings.Repeat("─", 10),
-		strings.Repeat("─", 15),
-		strings.Repeat("─", 20))
-
 	// Only show these nodes
 	allowedNodes := map[string]struct{}{
 		"delta-slurm1-slurm-schedulable": {},
@@ -92,10 +79,24 @@ func printNodeStatus() {
 		"wato2-slurm1-slurm-schedulable": {},
 	}
 
+	// Prepare table data
+	type TableRow struct {
+		Name        string
+		Status      string
+		LastPing    string
+		StatusColor func(string) string
+	}
+
+	var rows []TableRow
+	statusUp := func(s string) string { return color.New(color.FgGreen).Sprint(s) }
+	statusDown := func(s string) string { return color.New(color.FgRed).Sprint(s) }
+	statusUnknown := func(s string) string { return color.New(color.FgYellow).Sprint(s) }
+
 	for _, check := range checks.Checks {
 		if _, ok := allowedNodes[check.Name]; !ok {
 			continue
 		}
+
 		ago := "?"
 		if t, err := time.Parse(time.RFC3339Nano, check.LastPing); err == nil {
 			dur := time.Since(t)
@@ -111,26 +112,59 @@ func printNodeStatus() {
 			}
 		}
 
-		desc := check.Desc
-		if len(desc) > 40 {
-			desc = desc[:37] + "..."
-		}
-
-		// Format the line first, then apply colors
 		statusText := strings.ToUpper(check.Status)
-		line := fmt.Sprintf("%-35s %-10s %-15s %s", check.Name, statusText, ago, desc)
-
-		// Apply colors to specific parts
+		var colorFunc func(string) string
 		switch check.Status {
 		case "up":
-			line = strings.Replace(line, statusText, statusUp.Sprint(statusText), 1)
+			colorFunc = statusUp
 		case "down":
-			line = strings.Replace(line, statusText, statusDown.Sprint(statusText), 1)
+			colorFunc = statusDown
 		default:
-			line = strings.Replace(line, statusText, statusUnknown.Sprint(statusText), 1)
+			colorFunc = statusUnknown
 		}
 
-		fmt.Println(line)
+		rows = append(rows, TableRow{
+			Name:        check.Name,
+			Status:      statusText,
+			LastPing:    ago,
+			StatusColor: colorFunc,
+		})
+	}
+
+	// Column widths
+	const (
+		nameWidth     = 30
+		statusWidth   = 10
+		lastPingWidth = 15
+	)
+
+	// Print header
+	fmt.Printf("%-*s %-*s %-*s\n",
+		nameWidth, "Node",
+		statusWidth, "Status",
+		lastPingWidth, "Last Ping")
+
+	// Print separator
+	fmt.Printf("%s %s %s\n",
+		strings.Repeat("─", nameWidth),
+		strings.Repeat("─", statusWidth),
+		strings.Repeat("─", lastPingWidth))
+
+	// Print rows
+	for _, row := range rows {
+		// Print name column
+		fmt.Printf("%-*s ", nameWidth, row.Name)
+
+		// Print status column with color
+		coloredStatus := row.StatusColor(row.Status)
+		fmt.Print(coloredStatus)
+		// Add padding for status column
+		statusPadding := statusWidth - len(row.Status)
+		fmt.Print(strings.Repeat(" ", statusPadding))
+		fmt.Print(" ")
+
+		// Print last ping column
+		fmt.Printf("%-*s\n", lastPingWidth, row.LastPing)
 	}
 }
 
@@ -149,7 +183,7 @@ func printMaintenanceNodes() {
 	lines := strings.Split(string(out), "\n")
 	var nodeName, nodeState string
 	printed := false
-	fmt.Printf("%-28s  %s\n", faint("Node"), faint("State"))
+	fmt.Printf("%-28s %-12s\n", faint("Node"), faint("State"))
 	fmt.Println(faint(strings.Repeat("-", 40)))
 	for _, line := range lines {
 		if strings.Contains(line, "NodeName") {
@@ -164,7 +198,7 @@ func printMaintenanceNodes() {
 			}
 		}
 		if nodeName != "" && nodeState != "" {
-			fmt.Printf("%-28s  %s\n", nodeName, nodeState)
+			fmt.Printf("%-28s %-12s\n", nodeName, nodeState)
 			nodeName, nodeState = "", ""
 			printed = true
 		}
@@ -172,4 +206,9 @@ func printMaintenanceNodes() {
 	if !printed {
 		fmt.Println(faint("(No maintenance nodes found.)"))
 	}
+
+	// Print a short note about reservations
+	fmt.Println()
+	color.New(color.Faint).Println("For maintenance, create a reservation: scontrol create reservation ...")
+	color.New(color.Faint).Println("See: https://cloud.watonomous.ca/docs/community-docs/watcloud/maintenance-manual#creating-a-reservation")
 }
