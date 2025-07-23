@@ -79,8 +79,23 @@ func printNodeStatus() {
 		strings.Repeat("─", 15),
 		strings.Repeat("─", 20))
 
-	// Print data
+	// Only show these nodes
+	allowedNodes := map[string]struct{}{
+		"delta-slurm1-slurm-schedulable": {},
+		"elastic-ssh":                    {},
+		"thor-slurm1-slurm-schedulable":  {},
+		"tr-slurm2-slurm-schedulable":    {},
+		"trpro-slurm1-slurm-schedulable": {},
+		"trpro-slurm2-slurm-schedulable": {},
+		"wato-login1-ssh":                {},
+		"wato-login2-ssh":                {},
+		"wato2-slurm1-slurm-schedulable": {},
+	}
+
 	for _, check := range checks.Checks {
+		if _, ok := allowedNodes[check.Name]; !ok {
+			continue
+		}
 		ago := "?"
 		if t, err := time.Parse(time.RFC3339Nano, check.LastPing); err == nil {
 			dur := time.Since(t)
