@@ -11,8 +11,8 @@ var daemonStatusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Lists all non-interactive background user processes (daemons).",
 	Run: func(cmd *cobra.Command, args []string) {
-		result := daemon.ListDaemons()
-		fmt.Println(result)
+		result, _ := daemon.ListDaemons()
+		fmt.Print(result)
 	},
 }
 
