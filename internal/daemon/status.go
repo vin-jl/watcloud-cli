@@ -25,6 +25,7 @@ var allProbes = []probe{
 			}
 			paths := []string{
 				os.Getenv("XDG_RUNTIME_DIR") + "/docker.sock", // rootless
+				"/tmp/run/docker.sock",                        // slurm job docker
 				"/var/run/docker.sock",                        // root-ful
 			}
 			for _, p := range paths {
