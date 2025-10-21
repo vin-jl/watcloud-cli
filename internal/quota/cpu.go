@@ -2,7 +2,9 @@ package quota
 
 import (
 	"fmt"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/shirou/gopsutil/v3/cpu"
@@ -10,11 +12,13 @@ import (
 
 // CPUUsage prints the current CPU usage percentage with color.
 func CPUUsage() error {
-	percent, err := cpu.Percent(0, true)
+	// Use 100ms for a quick but still accurate reading
+	percent, err := cpu.Percent(time.Second, true)
 	if err != nil || len(percent) == 0 {
 		return err
 	}
 	info, _ := cpu.Info()
+	hostname, _ := os.Hostname()
 	logical, _ := cpu.Counts(true)
 	physical, _ := cpu.Counts(false)
 	skyBlue := func(s string) string {
@@ -23,6 +27,9 @@ func CPUUsage() error {
 	faint := color.New(color.Faint).SprintFunc()
 	fmt.Println(skyBlue("CPU Usage"))
 	fmt.Println(faint(strings.Repeat("─", 40)))
+	if hostname != "" {
+		fmt.Printf("System: %s\n", hostname)
+	}
 	if len(info) > 0 {
 		fmt.Printf("Model: %s\n", info[0].ModelName)
 	}
@@ -43,5 +50,6 @@ func CPUUsage() error {
 		}
 		fmt.Printf("%-8d %-8s\n", i, percentStr)
 	}
+	fmt.Println()
 	return nil
 }

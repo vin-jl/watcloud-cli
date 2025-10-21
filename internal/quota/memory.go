@@ -36,6 +36,11 @@ func MemoryUsage() error {
 	default:
 		percentStr = color.New(color.FgYellow).Sprintf("%.0f%%", percent)
 	}
-	fmt.Printf("%-12.2f %-12.2f %-12.2f %-12s\n", total, used, free, percentStr)
+	fmt.Printf("%-12s %-12s %-12s %-12s\n",
+		fmt.Sprintf("%.2f GiB", total),
+		fmt.Sprintf("%.2f GiB", used),
+		fmt.Sprintf("%.2f GiB", free),
+		percentStr)
+	fmt.Println()
 	return nil
 }
