@@ -2,16 +2,15 @@ package quota
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/shirou/gopsutil/v3/disk"
 )
 
-// DiskUsage prints disk usage statistics for the user's home directory with Ceph quota.
 func DiskUsage() error {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -21,23 +20,21 @@ func DiskUsage() error {
 	// Try to get Ceph quota
 	quotaBytes, usedBytes, err := getCephQuota(homeDir)
 
-	// Fallback to regular disk usage if Ceph quota is not available
+	// Default to 0 if quota can't be found
 	if err != nil {
-		usage, err := disk.Usage(homeDir)
-		if err != nil {
-			return err
-		}
-		quotaBytes = usage.Total
-		usedBytes = usage.Used
+		quotaBytes = 0
+		usedBytes = 0
 	}
 
 	total := float64(quotaBytes) / (1 << 30)
 	used := float64(usedBytes) / (1 << 30)
-	free := float64(quotaBytes-usedBytes) / (1 << 30)
+	free := math.Max((total-used), 0) / (1 << 30)
 
 	var percent float64
 	if quotaBytes > 0 {
-		percent = (float64(usedBytes) / float64(quotaBytes)) * 100
+		percent = (used / total) * 100
+	} else {
+		percent = 100
 	}
 
 	skyBlue := func(s string) string {
@@ -66,7 +63,6 @@ func DiskUsage() error {
 	return nil
 }
 
-// getCephQuota reads Ceph quota and usage from extended attributes
 func getCephQuota(path string) (quotaBytes uint64, usedBytes uint64, err error) {
 	// Get quota using getfattr
 	cmd := exec.Command("getfattr", "-n", "ceph.quota", "--only-values", path)

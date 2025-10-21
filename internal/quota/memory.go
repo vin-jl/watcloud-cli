@@ -2,6 +2,7 @@ package quota
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"os/exec"
 	"regexp"
@@ -11,10 +12,9 @@ import (
 	"github.com/fatih/color"
 )
 
-// MemoryUsage prints memory usage statistics with color.
 func MemoryUsage() error {
 	// Get actual memory usage using ps command
-	usedMiB, err := getActualMemoryUsage()
+	usedMiB, err := getMemoryUsage()
 	if err != nil {
 		return err
 	}
@@ -27,11 +27,13 @@ func MemoryUsage() error {
 
 	total := float64(totalMiB) / 1024.0 // Convert MiB to GiB
 	used := float64(usedMiB) / 1024.0
-	free := total - used
+	free := math.Max(total-used, 0)
 
 	var percent float64
 	if totalMiB > 0 {
-		percent = (float64(usedMiB) / float64(totalMiB)) * 100
+		percent = (used / total) * 100
+	} else {
+		percent = 100
 	}
 
 	skyBlue := func(s string) string {
@@ -61,7 +63,7 @@ func MemoryUsage() error {
 }
 
 // Get memory usage in MiB by summing RSS of all user processes
-func getActualMemoryUsage() (float64, error) {
+func getMemoryUsage() (float64, error) {
 	cmd := exec.Command("sh", "-c", "ps -u $USER -o rss= | awk '{sum+=$1} END {print sum/1024}'")
 	output, err := cmd.Output()
 	if err != nil {
@@ -76,7 +78,7 @@ func getActualMemoryUsage() (float64, error) {
 	return usedMiB, nil
 }
 
-// getAllocatedMemory returns the total allocated memory in MiB
+// Returns the total allocated memory in MiB
 func getAllocatedMemory() (float64, error) {
 	// Check if we're on a login node
 	hostname, err := os.Hostname()
@@ -87,15 +89,14 @@ func getAllocatedMemory() (float64, error) {
 	// Check if we're in a SLURM job
 	jobID := os.Getenv("SLURM_JOB_ID")
 	if jobID == "" {
-		// Not in a SLURM job, default to 2048 MiB
-		return 2048, nil
+		return 0, nil // Not in a SLURM job, default to 0
 	}
 
 	// Get memory allocation from SLURM
 	cmd := exec.Command("sh", "-c", fmt.Sprintf("scontrol show job %s | grep \"AllocTRES=\"", jobID))
 	output, err := cmd.Output()
 	if err != nil {
-		return 2048, nil // Default to 2048 MiB
+		return 0, nil
 	}
 
 	// Parse memory from output "mem=36G" or "mem=4096M"
@@ -112,6 +113,5 @@ func getAllocatedMemory() (float64, error) {
 		}
 	}
 
-	// Default
-	return 2048, nil
+	return 0, nil
 }
