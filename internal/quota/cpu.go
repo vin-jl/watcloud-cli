@@ -26,7 +26,7 @@ func CPUUsage() error {
 	}
 	faint := color.New(color.Faint).SprintFunc()
 	fmt.Println(skyBlue("CPU Usage"))
-	fmt.Println(faint(strings.Repeat("─", 40)))
+	fmt.Println(faint(strings.Repeat("─", 60)))
 	if hostname != "" {
 		fmt.Printf("System: %s\n", hostname)
 	}
@@ -34,7 +34,7 @@ func CPUUsage() error {
 		fmt.Printf("Model: %s\n", info[0].ModelName)
 	}
 	fmt.Printf("Cores: %d logical / %d physical\n", logical, physical)
-	fmt.Println(faint(strings.Repeat("-", 40)))
+	fmt.Println(faint(strings.Repeat("-", 60)))
 	// Print per-core usage
 	fmt.Printf("%-8s %-8s\n", "Core", "Usage %")
 	fmt.Println(faint(strings.Repeat("-", 8) + " " + strings.Repeat("-", 8)))
