@@ -10,9 +10,7 @@ import (
 	"github.com/shirou/gopsutil/v3/cpu"
 )
 
-// CPUUsage prints the current CPU usage percentage with color.
 func CPUUsage() error {
-	// Use 100ms for a quick but still accurate reading
 	percent, err := cpu.Percent(time.Second, true)
 	if err != nil || len(percent) == 0 {
 		return err

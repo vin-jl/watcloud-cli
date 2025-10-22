@@ -11,7 +11,7 @@ import (
 	"github.com/fatih/color"
 )
 
-// isSocket checks if a path exists, is a valid Unix socket, and accepts connections
+// Checks if a path exists, is a valid Unix socket, and accepts connections
 func isSocket(path string) bool {
 	info, err := os.Stat(path)
 	if err != nil {

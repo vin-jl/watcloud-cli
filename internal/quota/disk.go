@@ -38,6 +38,7 @@ func DiskUsage() error {
 		percent = 100
 	}
 
+	// Try to check /tmp for size and usage
 	tempSize, tempUsage, err := getTempQuota()
 
 	// Default to 0 if quota can't be found
