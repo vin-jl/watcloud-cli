@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -37,12 +38,43 @@ func DiskUsage() error {
 		percent = 100
 	}
 
+	tempSize, tempUsage, err := getTempQuota()
+
+	// Default to 0 if quota can't be found
+	if err != nil {
+		tempSize = 0
+		tempUsage = 0
+	}
+
+	// tempSize and tempUsage are in MiB, convert to GiB
+	tempTotal := float64(tempSize) / 1024.0
+	tempUsed := float64(tempUsage) / 1024.0
+	tempFree := math.Max((tempTotal - tempUsed), 0)
+
+	var tempPercent float64
+	if tempTotal > 0 {
+		tempPercent = (tempUsed / tempTotal) * 100
+	} else {
+		tempPercent = 100
+	}
+
 	skyBlue := func(s string) string {
 		return "\x1b[1m\x1b[38;2;16;128;255m" + s + "\x1b[0m"
 	}
 	faint := color.New(color.Faint).SprintFunc()
 	fmt.Println(skyBlue("Disk Usage"))
-	fmt.Println(faint(strings.Repeat("─", 40)))
+	fmt.Println(faint(strings.Repeat("─", 60)))
+	fmt.Println(skyBlue("HOME") + " — $HOME")
+	printUsageBlock(total, used, free, percent)
+
+	fmt.Println(skyBlue("TEMP") + " — /tmp/")
+	printUsageBlock(tempTotal, tempUsed, tempFree, tempPercent)
+
+	return nil
+}
+
+func printUsageBlock(total float64, used float64, free float64, percent float64) {
+	faint := color.New(color.Faint).SprintFunc()
 	fmt.Printf("%-12s %-12s %-12s %-12s\n", "Total", "Used", "Free", "Used %")
 	fmt.Println(faint(strings.Repeat("-", 12) + " " + strings.Repeat("-", 12) + " " + strings.Repeat("-", 12) + " " + strings.Repeat("-", 12)))
 	var percentStr string
@@ -60,7 +92,55 @@ func DiskUsage() error {
 		fmt.Sprintf("%.2f GiB", free),
 		percentStr)
 	fmt.Println()
-	return nil
+}
+
+func getTempQuota() (quotaBytes uint64, usedBytes uint64, err error) {
+	// Check if we can get size of /tmp directory
+	size, err := getTempUsage()
+	if err != nil {
+		return 0, 0, err //tmp doesn't exist
+	}
+	usedBytes = size
+
+	// Check if we're in a SLURM job
+	jobID := os.Getenv("SLURM_JOB_ID")
+	if jobID == "" {
+		return 0, usedBytes, nil // Not in a SLURM job, return usage but no quota
+	}
+
+	// Get disk allocation from SLURM
+	cmd := exec.Command("sh", "-c", fmt.Sprintf("scontrol show job %s | grep \"AllocTRES=\"", jobID))
+	output, err := cmd.Output()
+	if err != nil {
+		return 0, usedBytes, nil
+	}
+
+	// Parse tmpdsk from output "gres/tmpdisk="
+	re := regexp.MustCompile(`gres/tmpdisk=(\d+)`)
+	matches := re.FindStringSubmatch(string(output))
+	if len(matches) > 1 {
+		diskValue, err := strconv.ParseUint(matches[1], 10, 64)
+		if err == nil {
+			return diskValue, usedBytes, nil
+		}
+	}
+
+	return 0, usedBytes, nil // default - return usage even if quota not found
+}
+
+func getTempUsage() (uint64, error) {
+	cmd := exec.Command("sh", "-c", "du -sb /tmp | awk '{print $1}'")
+	output, err := cmd.Output()
+	if err != nil {
+		return 0, err
+	}
+
+	usedMiB, err := strconv.ParseUint(strings.TrimSpace(string(output)), 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return (usedMiB / (2 ^ 20)), nil
 }
 
 func getCephQuota(path string) (quotaBytes uint64, usedBytes uint64, err error) {

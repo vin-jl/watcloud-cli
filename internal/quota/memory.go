@@ -41,7 +41,7 @@ func MemoryUsage() error {
 	}
 	faint := color.New(color.Faint).SprintFunc()
 	fmt.Println(skyBlue("Memory Usage"))
-	fmt.Println(faint(strings.Repeat("─", 40)))
+	fmt.Println(faint(strings.Repeat("─", 60)))
 	fmt.Printf("%-12s %-12s %-12s %-12s\n", "Allocated", "Used", "Free", "Used %")
 	fmt.Println(faint(strings.Repeat("-", 12) + " " + strings.Repeat("-", 12) + " " + strings.Repeat("-", 12) + " " + strings.Repeat("-", 12)))
 	var percentStr string

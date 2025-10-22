@@ -80,7 +80,7 @@ var allProbes = []probe{
 func ListDaemons() (string, int) {
 	var b strings.Builder
 	header := color.New(color.Bold, color.FgHiCyan).Sprint("Daemon Status")
-	divider := color.New(color.Faint).Sprint(strings.Repeat("─", 40))
+	divider := color.New(color.Faint).Sprint(strings.Repeat("─", 60))
 	fmt.Fprintln(&b, header)
 	fmt.Fprintln(&b, divider)
 
