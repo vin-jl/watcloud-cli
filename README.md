@@ -8,7 +8,7 @@
 
 ## Setup & Installation
 
-**Requirements:** Go 1.22+ (and optionally Docker for daemon status)
+**Requirements:** Go 1.22+
 
 Clone the repository:
 ```sh
