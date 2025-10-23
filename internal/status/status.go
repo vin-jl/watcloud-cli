@@ -176,7 +176,7 @@ func printMaintenanceNodes() {
 		if strings.Contains(err.Error(), "executable file not found") { // not on cluster
 			color.New(color.FgYellow).Println("Maintenance node info unavailable. SSH onto the WATcloud Cluster to view.")
 		} else {
-			color.New(color.FgRed).Printf("Error fetching maintainence status. Cluster may be down due to outage: %v\n", err)
+			color.New(color.FgRed).Println("Error fetching maintainence status. Cluster may be down due to outage.")
 		}
 		return
 	}

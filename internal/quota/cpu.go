@@ -3,6 +3,9 @@ package quota
 import (
 	"fmt"
 	"os"
+	"os/exec"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,7 +21,13 @@ func CPUUsage() error {
 	info, _ := cpu.Info()
 	hostname, _ := os.Hostname()
 	logical, _ := cpu.Counts(true)
-	physical, _ := cpu.Counts(false)
+
+	// Get allocated CPUs from SLURM if in a job
+	allocatedCPUs, err := getAllocatedCPUs()
+	if err != nil {
+		return err
+	}
+
 	skyBlue := func(s string) string {
 		return "\x1b[1m\x1b[38;2;16;128;255m" + s + "\x1b[0m"
 	}
@@ -31,7 +40,11 @@ func CPUUsage() error {
 	if len(info) > 0 {
 		fmt.Printf("Model: %s\n", info[0].ModelName)
 	}
-	fmt.Printf("Cores: %d logical / %d physical\n", logical, physical)
+
+	// Display cores with allocated count highlighted
+	allocatedStr := color.New(color.FgCyan, color.Bold).Sprintf("%d allocated", allocatedCPUs)
+	fmt.Printf("Cores: %s / %d logical\n", allocatedStr, logical)
+
 	fmt.Println(faint(strings.Repeat("-", 60)))
 	// Print per-core usage
 	fmt.Printf("%-8s %-8s\n", "Core", "Usage %")
@@ -50,4 +63,38 @@ func CPUUsage() error {
 	}
 	fmt.Println()
 	return nil
+}
+
+// Total allocated CPUs
+func getAllocatedCPUs() (int, error) {
+	// Check if we're on a login node
+	hostname, err := os.Hostname()
+	if err == nil && strings.Contains(hostname, "wato-login") {
+		return 1, nil // Login nodes have 1 core quota
+	}
+
+	// Check if we're in a SLURM job
+	jobID := os.Getenv("SLURM_JOB_ID")
+	if jobID == "" {
+		return 0, nil // Not in a SLURM job, default to 0
+	}
+
+	// Get CPU allocation from SLURM
+	cmd := exec.Command("sh", "-c", fmt.Sprintf("scontrol show job %s | grep \"AllocTRES=\"", jobID))
+	output, err := cmd.Output()
+	if err != nil {
+		return 0, err
+	}
+
+	// Parse CPU from output "cpu=1"
+	re := regexp.MustCompile(`\bcpu=(\d+)`)
+	matches := re.FindStringSubmatch(string(output))
+	if len(matches) > 1 {
+		cpuCount, err := strconv.Atoi(matches[1])
+		if err == nil {
+			return cpuCount, nil
+		}
+	}
+
+	return 0, nil
 }

@@ -29,7 +29,7 @@ func DiskUsage() error {
 
 	total := float64(quotaBytes) / (1 << 30)
 	used := float64(usedBytes) / (1 << 30)
-	free := math.Max((total-used), 0) / (1 << 30)
+	free := math.Max((total - used), 0)
 
 	var percent float64
 	if quotaBytes > 0 {
@@ -65,10 +65,10 @@ func DiskUsage() error {
 	faint := color.New(color.Faint).SprintFunc()
 	fmt.Println(skyBlue("Disk Usage"))
 	fmt.Println(faint(strings.Repeat("─", 60)))
-	fmt.Println(skyBlue("HOME") + " — $HOME")
+	fmt.Println(skyBlue("↳ HOME") + " — $HOME")
 	printUsageBlock(total, used, free, percent)
 
-	fmt.Println(skyBlue("TEMP") + " — /tmp/")
+	fmt.Println(skyBlue("↳ TEMP") + " — /tmp/")
 	printUsageBlock(tempTotal, tempUsed, tempFree, tempPercent)
 
 	return nil
@@ -76,7 +76,7 @@ func DiskUsage() error {
 
 func printUsageBlock(total float64, used float64, free float64, percent float64) {
 	faint := color.New(color.Faint).SprintFunc()
-	fmt.Printf("%-12s %-12s %-12s %-12s\n", "Total", "Used", "Free", "Used %")
+	fmt.Printf("%-12s %-12s %-12s %-12s\n", "Allocated", "Used", "Free", "Used %")
 	fmt.Println(faint(strings.Repeat("-", 12) + " " + strings.Repeat("-", 12) + " " + strings.Repeat("-", 12) + " " + strings.Repeat("-", 12)))
 	var percentStr string
 	switch {
